@@ -1,0 +1,304 @@
+# This is an example .goreleaser.yml file with some sensible defaults.
+# Make sure to check the documentation at https://goreleaser.com
+
+# The lines below are called `modelines`. See `:help modeline`
+# Feel free to remove those if you don't want/need to use them.
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+---
+version: 2
+project_name: go-actions-demo
+
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod tidy
+    # you may remove this if you don't need go generate
+    - go generate ./...
+
+builds:
+  - binary: go-actions-demo
+    main: ./cmd/go-actions-demo/
+    flags:
+      - -trimpath
+    ldflags: -s -w -X main.version={{.Version}} -X main.commit={{.ShortCommit}} -X main.date={{.Date}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - windows
+      - linux
+      - freebsd
+      - netbsd
+      - illumos
+    goarch:
+      - amd64
+      - arm64
+      - arm
+      - "386"
+      - ppc64le
+      - s390x
+      - mips64
+      - mips64le
+      - riscv64
+      - loong64
+    goarm:
+      - "6"
+      - "7"
+    gomips:
+      - hardfloat
+    ignore:
+      - goos: darwin
+        goarch: "386"
+      - goos: freebsd
+        goarch: arm64
+
+archives:
+  - format: tar.gz
+    wrap_in_directory: true
+    format_overrides:
+      - goos: windows
+        format: zip
+    name_template: '{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+    files:
+      - LICENSE
+      - README.md
+
+snapshot:
+  name_template: SNAPSHOT-{{ .Commit }}
+
+checksum:
+  name_template: '{{ .ProjectName }}-{{ .Version }}-checksums.txt'
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '(?i)^docs?:'
+      - '(?i)^docs\([^:]+\):'
+      - '(?i)^docs\[[^:]+\]:'
+      - '^tests?:'
+      - '(?i)^dev:'
+      - '(?i)^chore:'
+      - '^build\(deps\): bump .* in /docs \(#\d+\)'
+      - '^build\(deps\): bump .* in /\.github/peril \(#\d+\)'
+      - '^build\(deps\): bump .* in /scripts/gen_github_action_config \(#\d+\)'
+      - Merge pull request
+      - Merge branch
+
+release:
+  github:
+    owner: xiexianbin
+    name: go-actions-demo
+  header: |
+    `go-actions-demo` is a free and open-source project built by volunteers.
+
+    If you value it, consider supporting us, the maintainers.
+
+    We appreciate it! :heart:
+
+    For key updates, see the [changelog](https://github.com/xiexianbin/go-actions-demo/releases/tag/v{{ .Major }}{{ .Minor }}{{ .Patch }}).
+
+source:
+  enabled: true
+  name_template: '{{ .ProjectName }}-{{ .Version }}-source'
+
+brews:
+  - repository:
+      owner: xiexianbin
+      name: homebrew-tap
+    directory: Formula
+    homepage: https://xiexianbin.cn
+    description: go actions demo.
+    install: |
+      bin.install "go-actions-demo"
+      output = Utils.popen_read("#{bin}/go-actions-demo completion bash")
+      (bash_completion/"go-actions-demo").write output
+      output = Utils.popen_read("#{bin}/go-actions-demo completion zsh")
+      (zsh_completion/"_go-actions-demo").write output
+      output = Utils.popen_read("#{bin}/go-actions-demo completion fish")
+      (fish_completion/"go-actions-demo.fish").write output
+      prefix.install_metafiles
+    test: |
+      system "#{bin}/go-actions-demo --version"
+
+chocolateys:
+  - name: go-actions-demo
+    owners: xiexianbin
+    title: go-actions-demo
+    authors: xiexianbin
+    project_url: https://github.com/xiexianbin/go-actions-demo
+    url_template: "https://github.com/xiexianbin/go-actions-demo/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    icon_url: "https://www.xiexianbin.cn/images/logo/logo.png"
+    copyright: xiexianbin.cn
+    license_url: https://github.com/xiexianbin/go-actions-demo/blob/main/LICENSE
+    require_license_acceptance: false
+    project_source_url: https://github.com/xiexianbin/go-actions-demo
+    package_source_url: https://github.com/xiexianbin/go-actions-demo
+    docs_url: https://github.com/xiexianbin/go-actions-demo
+    bug_tracker_url: https://github.com/xiexianbin/go-actions-demo/issues
+    tags: "go golang lint linter"
+    summary: go actions demo
+    description: |
+      {{ .ProjectName }} installer package.
+      go actions demo .
+    release_notes: "https://github.com/xiexianbin/go-actions-demo/releases/tag/v{{ .Version }}"
+    api_key: "{{ .Env.CHOCOLATEY_API_KEY }}"
+    source_repo: "https://push.chocolatey.org/"
+    skip_publish: false
+    goamd64: v1
+
+nfpms:
+  -
+    id: go-actions-demo-nfpms
+    package_name: go-actions-demo
+    file_name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    homepage: https://github.com/xiexianbin/go-actions-demo/
+    maintainer: "xiexianbin <me@xiexianbin.cn>"
+    description: go-actions-demo
+    license:  Apache-2.0 license
+    section: golang
+    formats:
+      - deb
+      - rpm
+      - apk
+    umask: 0o022
+    overrides:
+      deb:
+        contents:
+          - src: LICENSE
+            dst: /usr/share/doc/go-actions-demo/copyright
+          - src: README.md
+            dst: /usr/share/doc/go-actions-demo/README.md
+        recommends:
+          - golang-go
+      rpm:
+        contents:
+          - src: LICENSE
+            dst: /usr/share/doc/go-actions-demo/LICENSE
+            type: ""
+          - src: README.md
+            dst: /usr/share/doc/go-actions-demo/README.md
+            type: ""
+        recommends:
+          - /usr/bin/go
+    rpm:
+      group: Development/Tools
+
+docker_manifests:
+  # basic
+  - name_template: 'xiexianbin/go-actions-demo:latest'
+    image_templates:
+      - 'xiexianbin/go-actions-demo:{{ .Tag }}-amd64'
+      - 'xiexianbin/go-actions-demo:{{ .Tag }}-arm64'
+
+  - name_template: 'xiexianbin/go-actions-demo:v{{ .Major }}.{{ .Minor }}'
+    image_templates:
+      - 'xiexianbin/go-actions-demo:v{{ .Major }}.{{ .Minor }}-amd64'
+      - 'xiexianbin/go-actions-demo:v{{ .Major }}.{{ .Minor }}-arm64'
+
+  - name_template: 'xiexianbin/go-actions-demo:{{ .Tag }}'
+    image_templates:
+      - 'xiexianbin/go-actions-demo:{{ .Tag }}-amd64'
+      - 'xiexianbin/go-actions-demo:{{ .Tag }}-arm64'
+
+  # alpine
+  - name_template: 'xiexianbin/go-actions-demo:latest-alpine'
+    image_templates:
+      - 'xiexianbin/go-actions-demo:{{ .Tag }}-alpine-amd64'
+      - 'xiexianbin/go-actions-demo:{{ .Tag }}-alpine-arm64'
+
+  - name_template: 'xiexianbin/go-actions-demo:v{{ .Major }}.{{ .Minor }}-alpine'
+    image_templates:
+      - 'xiexianbin/go-actions-demo:v{{ .Major }}.{{ .Minor }}-alpine-amd64'
+      - 'xiexianbin/go-actions-demo:v{{ .Major }}.{{ .Minor }}-alpine-arm64'
+
+  - name_template: 'xiexianbin/go-actions-demo:{{ .Tag }}-alpine'
+    image_templates:
+      - 'xiexianbin/go-actions-demo:{{ .Tag }}-alpine-amd64'
+      - 'xiexianbin/go-actions-demo:{{ .Tag }}-alpine-arm64'
+
+dockers:
+  - use: buildx
+    goos: linux
+    goarch: amd64
+    dockerfile: build/buildx.Dockerfile
+    image_templates:
+      - 'xiexianbin/go-actions-demo:latest-amd64'
+      - 'xiexianbin/go-actions-demo:{{ .Tag }}-amd64'
+      - 'xiexianbin/go-actions-demo:v{{ .Major }}.{{ .Minor }}-amd64'
+    build_flag_templates:
+      - '--pull'
+      # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
+      - '--label=org.opencontainers.image.title={{.ProjectName}}'
+      - '--label=org.opencontainers.image.description=go actions demo'
+      - '--label=org.opencontainers.image.source={{.GitURL}}'
+      - '--label=org.opencontainers.image.url={{.GitURL}}'
+      - '--label=org.opencontainers.image.documentation=https://github.com/xiexianbin/go-actions-demo'
+      - '--label=org.opencontainers.image.created={{.Date}}'
+      - '--label=org.opencontainers.image.revision={{.FullCommit}}'
+      - '--label=org.opencontainers.image.version={{.Version}}'
+      - '--platform=linux/amd64'
+
+  - use: buildx
+    goos: linux
+    goarch: arm64
+    dockerfile: build/buildx.Dockerfile
+    image_templates:
+      - 'xiexianbin/go-actions-demo:latest-arm64'
+      - 'xiexianbin/go-actions-demo:{{ .Tag }}-arm64'
+      - 'xiexianbin/go-actions-demo:v{{ .Major }}.{{ .Minor }}-arm64'
+    build_flag_templates:
+      - '--pull'
+      # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
+      - '--label=org.opencontainers.image.title={{.ProjectName}}'
+      - '--label=org.opencontainers.image.description=go actions demo'
+      - '--label=org.opencontainers.image.source={{.GitURL}}'
+      - '--label=org.opencontainers.image.url={{.GitURL}}'
+      - '--label=org.opencontainers.image.documentation=https://github.com/xiexianbin/go-actions-demo'
+      - '--label=org.opencontainers.image.created={{.Date}}'
+      - '--label=org.opencontainers.image.revision={{.FullCommit}}'
+      - '--label=org.opencontainers.image.version={{.Version}}'
+      - '--platform=linux/arm64'
+
+  - use: buildx
+    goos: linux
+    goarch: amd64
+    dockerfile: build/buildx-alpine.Dockerfile
+    image_templates:
+      - 'xiexianbin/go-actions-demo:latest-alpine-amd64'
+      - 'xiexianbin/go-actions-demo:{{ .Tag }}-alpine-amd64'
+      - 'xiexianbin/go-actions-demo:v{{ .Major }}.{{ .Minor }}-alpine-amd64'
+    build_flag_templates:
+      - '--pull'
+      # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
+      - '--label=org.opencontainers.image.title={{.ProjectName}}'
+      - '--label=org.opencontainers.image.description=go actions demo'
+      - '--label=org.opencontainers.image.source={{.GitURL}}'
+      - '--label=org.opencontainers.image.url={{.GitURL}}'
+      - '--label=org.opencontainers.image.documentation=https://github.com/xiexianbin/go-actions-demo'
+      - '--label=org.opencontainers.image.created={{.Date}}'
+      - '--label=org.opencontainers.image.revision={{.FullCommit}}'
+      - '--label=org.opencontainers.image.version={{.Version}}'
+      - '--platform=linux/amd64'
+
+  - use: buildx
+    goos: linux
+    goarch: arm64
+    dockerfile: build/buildx-alpine.Dockerfile
+    image_templates:
+      - 'xiexianbin/go-actions-demo:latest-alpine-arm64'
+      - 'xiexianbin/go-actions-demo:{{ .Tag }}-alpine-arm64'
+      - 'xiexianbin/go-actions-demo:v{{ .Major }}.{{ .Minor }}-alpine-arm64'
+    build_flag_templates:
+      - '--pull'
+      # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
+      - '--label=org.opencontainers.image.title={{.ProjectName}}'
+      - '--label=org.opencontainers.image.description=go actions demo'
+      - '--label=org.opencontainers.image.source={{.GitURL}}'
+      - '--label=org.opencontainers.image.url={{.GitURL}}'
+      - '--label=org.opencontainers.image.documentation=https://github.com/xiexianbin/go-actions-demo'
+      - '--label=org.opencontainers.image.created={{.Date}}'
+      - '--label=org.opencontainers.image.revision={{.FullCommit}}'
+      - '--label=org.opencontainers.image.version={{.Version}}'
+      - '--platform=linux/arm64'
